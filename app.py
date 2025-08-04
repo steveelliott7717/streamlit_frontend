@@ -1,9 +1,6 @@
 import logging
 import streamlit as st
 import requests
-from langchain_openai import ChatOpenAI
-from langchain.memory import ConversationBufferWindowMemory
-from langchain.prompts import ChatPromptTemplate, SystemMessagePromptTemplate, MessagesPlaceholder, HumanMessagePromptTemplate
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -12,7 +9,7 @@ logger = logging.getLogger(__name__)
 st.set_page_config(
     page_title="Reminisc - Personal Memory for AI", layout="wide", page_icon="🧠")
 st.title("🧠 Reminisc")
-st.info('Personal memory for AI. https://github.com/advaitpaliwal/reminisc')
+st.info('')
 
 user_id = st.text_input("Enter a User ID",
                         value=st.session_state.get("user_id"))
@@ -25,38 +22,15 @@ headers = {"Content-Type": "application/json",
            "openai-api-key": st.session_state.openai_api_key}
 
 # API endpoint URLs
-BASE_URL = "https://api.reminisc.tech/v0/memory"
+BASE_URL = "https://reminisc.fly.dev/v0/memory"
 CREATE_MEMORY_URL = f"{BASE_URL}/"
 GET_MEMORIES_URL = f"{BASE_URL}/"
 DELETE_MEMORY_URL = f"{BASE_URL}/"
 SEARCH_MEMORIES_URL = f"{BASE_URL}/search"
 PROCESS_INPUT_URL = f"{BASE_URL}/process"
 
-if st.session_state.openai_api_key:
-    llm = ChatOpenAI(model_name="gpt-4o",
-                     api_key=st.session_state.openai_api_key)
-    conversation_memory = ConversationBufferWindowMemory(
-        memory_key="chat_history", k=7, return_messages=True
-    )
+# Nothing here anymore — all GPT handling is in the backend now
 
-    system_prompt = (
-        "You are a super friendly AI assistant named Rem who is excited to meet a new person.\n"
-        "Engage in warm, open conversation and ask questions to get to know them better.\n"
-        "Use the chat history and retrieved memories to provide relevant context and follow up on previous topics.\n"
-        "Keep the conversation flowing naturally and focus on building a positive, supportive relationship.\n\n"
-        "Retrieved Memory: {retrieved_memory}\n\n"
-    )
-
-    prompt_template = ChatPromptTemplate.from_messages([
-        SystemMessagePromptTemplate.from_template(system_prompt),
-        MessagesPlaceholder(
-            variable_name=conversation_memory.memory_key, optional=True),
-        HumanMessagePromptTemplate.from_template("{input}")
-    ])
-
-    if "chain" not in st.session_state:
-        chain = prompt_template | llm
-        st.session_state.chain = chain
 
 # Check and manage the session state for messages
 if "messages" not in st.session_state:
@@ -108,14 +82,9 @@ with chat_column:
             search_results = response.json()
             relevant_memory = " ".join(
                 [memory["content"] for memory in search_results])
+            # Just use backend's processed memory content as assistant reply
+            response_text = memory
 
-            # Generate response using the LLM and conversation memory
-            llm_input = {
-                'retrieved_memory': relevant_memory,
-                'input': prompt,
-                'chat_history': conversation_memory.load_memory_variables({})[conversation_memory.memory_key]
-            }
-            stream = st.session_state.chain.stream(llm_input)
 
             with chat_history_container:
                 if memory:
