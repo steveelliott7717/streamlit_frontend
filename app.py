@@ -2,6 +2,7 @@ import logging
 import streamlit as st
 import requests
 import os
+import json
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -88,9 +89,17 @@ with memory_column:
         memories = response.json()
 
         for memory in memories:
-            memory_id = memory["metadata"]["id"]
-            timestamp = memory["metadata"]["timestamp"]
-            memory_content = memory["content"]
+            # Parse metadata if it's a string
+            metadata = memory.get("metadata", {})
+            if isinstance(metadata, str):
+                try:
+                    metadata = json.loads(metadata)
+                except json.JSONDecodeError:
+                    metadata = {}
+
+            memory_id = metadata.get("id", "unknown")
+            timestamp = metadata.get("timestamp", "unknown")
+            memory_content = memory.get("content", "")
 
             with st.expander(memory_content):
                 st.write(f"**Memory ID:** {memory_id}")
@@ -100,12 +109,5 @@ with memory_column:
                     requests.delete(f"{DELETE_MEMORY_URL}{memory_id}", headers=headers)
                     st.rerun()
 
-        with st.expander("✍️ Create New Memory"):
-            new_memory = st.text_area("Enter a new memory")
-            if st.button("Store Memory"):
-                requests.post(CREATE_MEMORY_URL, json={
-                    "content": new_memory, "user_id": user_id
-                }, headers=headers)
-                st.rerun()
     else:
         st.warning("Enter a User ID to manage memories.")
