@@ -89,8 +89,15 @@ with memory_column:
         memories = response.json()
 
         for memory in memories:
+            # Ensure memory is a dict
+            if isinstance(memory, dict):
+                metadata = memory.get("metadata", {})
+                memory_content = memory.get("content", "")
+            else:
+                metadata = {}
+                memory_content = str(memory)
+
             # Parse metadata if it's a string
-            metadata = memory.get("metadata", {})
             if isinstance(metadata, str):
                 try:
                     metadata = json.loads(metadata)
@@ -99,15 +106,24 @@ with memory_column:
 
             memory_id = metadata.get("id", "unknown")
             timestamp = metadata.get("timestamp", "unknown")
-            memory_content = memory.get("content", "")
 
             with st.expander(memory_content):
                 st.write(f"**Memory ID:** {memory_id}")
                 st.write(f"**Timestamp:** {timestamp}")
                 st.write(f"**Memory:** {memory_content}")
-                if st.button("Delete", key=memory_id):
+                if st.button("Delete", key=f"delete-{memory_id}"):
                     requests.delete(f"{DELETE_MEMORY_URL}{memory_id}", headers=headers)
                     st.rerun()
+
+        with st.expander("✍️ Create New Memory"):
+            new_memory = st.text_area("Enter a new memory")
+            if st.button("Store Memory"):
+                requests.post(CREATE_MEMORY_URL, json={
+                    "content": new_memory,
+                    "user_id": user_id
+                }, headers=headers)
+                st.rerun()
+
 
     else:
         st.warning("Enter a User ID to manage memories.")
