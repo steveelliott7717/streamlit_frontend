@@ -127,3 +127,45 @@ with memory_column:
 
     else:
         st.warning("Enter a User ID to manage memories.")
+
+import streamlit as st
+import requests
+
+st.title("🧠 Reminisc")
+
+# Initialize chat history
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+# Display chat messages
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
+
+# User input
+if prompt := st.chat_input("What is up?"):
+    # Add user message to chat history
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    with st.chat_message("user"):
+        st.markdown(prompt)
+    
+    # Get AI response
+    response = requests.post(
+        "http://your-api-url/v0/memory/process",
+        json={
+            "query": prompt,
+            "assistant_response": "",
+            "user_id": "123"  # Get from your user input
+        }
+    )
+    
+    if response.status_code == 200:
+        data = response.json()
+        ai_response = data.get("response", "Message processed!")
+        
+        # Add AI response to chat history
+        st.session_state.messages.append({"role": "assistant", "content": ai_response})
+        with st.chat_message("assistant"):
+            st.markdown(ai_response)
+    else:
+        st.error("Failed to get response")
