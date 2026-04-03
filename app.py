@@ -155,7 +155,7 @@ if prompt := st.chat_input("What is up?"):
         json={
             "query": prompt,
             "assistant_response": "",
-            "user_id": "123"  # Get from your user input
+            "user_id": "user_id"  # Get from your user input
         }
     )
     
